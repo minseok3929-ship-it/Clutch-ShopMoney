@@ -1,0 +1,14 @@
+prefix: "§0[CLUTCH] "
+cash:
+  customModelData: 10001
+joinMessage:
+  enabled: true
+  cooldownSeconds: 0
+  text: "§f[Clutch plugin] 활성화"
+shop:
+  gui:
+    title: "§8상점"
+  editGui:
+    title: "§8상점 편집"
+  spawnGui:
+    title: "§8상점 소환권"
