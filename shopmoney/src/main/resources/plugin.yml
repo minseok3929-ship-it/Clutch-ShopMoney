@@ -9,8 +9,8 @@ commands:
     usage: /출금 <금액>
     permission: clutch.money.use
   돈:
-    description: 돈 관련 명령어
-    usage: /돈 보내기 <닉네임> <금액>
+    description: "보유금 확인 및 송금"
+    usage: "/돈 또는 /돈 보내기 <닉네임> <금액>"
     permission: clutch.money.use
   t:
     description: 관리자 명령어

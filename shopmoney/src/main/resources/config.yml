@@ -1,4 +1,5 @@
-prefix: "§0[CLUTCH] "
+message:
+  prefix: "§8[CLUTCH] "
 cash:
   customModelData: 10001
 joinMessage:
@@ -12,3 +13,6 @@ shop:
     title: "§8상점 편집"
   spawnGui:
     title: "§8상점 소환권"
+
+scoreboard:
+  title: "§8CLUTCH"

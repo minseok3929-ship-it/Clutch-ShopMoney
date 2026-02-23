@@ -7,7 +7,7 @@ public final class MessageUtil {
     private final String prefix;
 
     public MessageUtil(JavaPlugin plugin) {
-        this.prefix = plugin.getConfig().getString("prefix", "§0[CLUTCH] ");
+        this.prefix = plugin.getConfig().getString("message.prefix", "§8[CLUTCH] ");
     }
 
     public String format(String message) {
