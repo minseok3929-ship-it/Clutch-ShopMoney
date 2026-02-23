@@ -14,7 +14,7 @@ commands:
     permission: clutch.money.use
   t:
     description: 관리자 명령어
-    usage: /t <돈|상점> ...
+    usage: /t <돈|상점> ... (상점 디스폰 포함)
 permissions:
   clutch.money.use:
     default: true

@@ -34,8 +34,8 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
         ShopRepository shopRepository = new ShopRepository(database);
         MoneyService moneyService = new MoneyService(accountRepository);
         ShopService shopService = new ShopService(this, shopRepository);
-        ChatInputService chatInputService = new ChatInputService();
         GuiFactory guiFactory = new GuiFactory(this, shopService);
+        ChatInputService chatInputService = new ChatInputService(this, shopService, guiFactory, messageUtil);
         try { shopService.load(); } catch (Exception ignored) {}
         shopService.restoreFromWorldScan();
 

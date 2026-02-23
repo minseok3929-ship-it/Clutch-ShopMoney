@@ -87,7 +87,11 @@ public class GuiFactory {
     }
 
     public Inventory editShop(Shop shop) {
-        Inventory inv = Bukkit.createInventory(new AdminEditShopGuiHolder(shop.getId()), 54, plugin.getConfig().getString("shop.editGui.title", "§8상점 편집") + " §7- " + shop.getName());
+        return editShop(shop, 0);
+    }
+
+    public Inventory editShop(Shop shop, int page) {
+        Inventory inv = Bukkit.createInventory(new AdminEditShopGuiHolder(shop.getId(), page), 54, plugin.getConfig().getString("shop.editGui.title", "§8상점 편집") + " §7- " + shop.getName());
         for (ShopItem item : shop.getItems()) {
             if (item.getSlot() >= 0 && item.getSlot() < 54) inv.setItem(item.getSlot(), item.getItem());
         }

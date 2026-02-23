@@ -2,6 +2,7 @@ package com.clutch.shopmoney.listener;
 
 import com.clutch.shopmoney.service.ChatInputService;
 import io.papermc.paper.event.player.AsyncChatEvent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -14,7 +15,8 @@ public class ChatListener implements Listener {
 
     @EventHandler
     public void onChat(AsyncChatEvent event) {
-        if (chatInputService.consume(event.getPlayer().getUniqueId(), net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.message()))) {
+        String message = PlainTextComponentSerializer.plainText().serialize(event.message());
+        if (chatInputService.handleChat(event.getPlayer(), message)) {
             event.setCancelled(true);
         }
     }

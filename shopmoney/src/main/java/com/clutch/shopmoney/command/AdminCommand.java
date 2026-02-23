@@ -89,7 +89,16 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             player.openInventory(guiFactory.editList(shopService.all()));
             return true;
         }
-        messageUtil.send(player, "§f사용법: /t 상점 <생성|삭제|스폰|편집>");
+        if (args.length >= 2 && "디스폰".equals(args[1])) {
+            String name = shopService.despawnLookingShop(player);
+            if (name == null) {
+                messageUtil.send(player, "§c바라보는 상점 주민을 찾지 못했습니다.");
+            } else {
+                messageUtil.send(player, "§f상점을 디스폰했습니다: §e" + name);
+            }
+            return true;
+        }
+        messageUtil.send(player, "§f사용법: /t 상점 <생성|삭제|스폰|편집|디스폰>");
         return true;
     }
 
@@ -98,7 +107,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
         List<String> out = new ArrayList<>();
         if (args.length == 1) { out.add("돈"); out.add("상점"); }
         else if (args.length == 2 && "돈".equals(args[0])) { out.add("생성"); out.add("순위"); }
-        else if (args.length == 2 && "상점".equals(args[0])) { out.add("생성"); out.add("삭제"); out.add("스폰"); out.add("편집"); }
+        else if (args.length == 2 && "상점".equals(args[0])) { out.add("생성"); out.add("삭제"); out.add("스폰"); out.add("편집"); out.add("디스폰"); }
         return out;
     }
 }
