@@ -20,14 +20,16 @@ public class ShopRepository {
     }
 
     public void createShop(String id, String name) throws SQLException {
-        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO shops(id,name,fluctuation_enabled,volatility_min,volatility_max,period_minutes,shop_mode) VALUES(?,?,?,?,?,?,?)")) {
+        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO shops(id,name,fluctuation_enabled,fluctuation_percent,volatility_min,volatility_max,period_minutes,interval_minutes,shop_mode) VALUES(?,?,?,?,?,?,?,?,?)")) {
             ps.setString(1, id);
             ps.setString(2, name);
             ps.setInt(3, 1);
-            ps.setInt(4, -50);
-            ps.setInt(5, 80);
-            ps.setInt(6, 10);
-            ps.setString(7, ShopMode.BUY_SELL.name());
+            ps.setInt(4, 0);
+            ps.setInt(5, -50);
+            ps.setInt(6, 80);
+            ps.setInt(7, 10);
+            ps.setInt(8, 5);
+            ps.setString(9, ShopMode.BUY_SELL.name());
             ps.executeUpdate();
         }
     }
@@ -44,7 +46,10 @@ public class ShopRepository {
         Map<String, Shop> map = new LinkedHashMap<>();
         try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("SELECT * FROM shops"); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                Shop s = new Shop(rs.getString("id"), rs.getString("name"), rs.getInt("fluctuation_enabled") == 1, rs.getInt("volatility_min"), rs.getInt("volatility_max"), rs.getInt("period_minutes"), parseMode(rs.getString("shop_mode")));
+                int period = rs.getInt("period_minutes");
+                int interval = rs.getInt("interval_minutes");
+                if (period <= 0) period = interval > 0 ? interval : 5;
+                Shop s = new Shop(rs.getString("id"), rs.getString("name"), rs.getInt("fluctuation_enabled") == 1, rs.getInt("volatility_min"), rs.getInt("volatility_max"), period, parseMode(rs.getString("shop_mode")));
                 map.put(s.getId(), s);
             }
         }
@@ -117,14 +122,16 @@ public class ShopRepository {
     }
 
     public void updateShopMeta(Shop shop) throws SQLException {
-        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("UPDATE shops SET name=?, fluctuation_enabled=?, volatility_min=?, volatility_max=?, period_minutes=?, shop_mode=? WHERE id=?")) {
+        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("UPDATE shops SET name=?, fluctuation_enabled=?, fluctuation_percent=?, volatility_min=?, volatility_max=?, period_minutes=?, interval_minutes=?, shop_mode=? WHERE id=?")) {
             ps.setString(1, shop.getName());
             ps.setInt(2, shop.isFluctuationEnabled() ? 1 : 0);
-            ps.setInt(3, shop.getVolatilityMinPercent());
-            ps.setInt(4, shop.getVolatilityMaxPercent());
-            ps.setInt(5, shop.getPeriodMinutes());
-            ps.setString(6, shop.getShopMode().name());
-            ps.setString(7, shop.getId());
+            ps.setInt(3, 0);
+            ps.setInt(4, shop.getVolatilityMinPercent());
+            ps.setInt(5, shop.getVolatilityMaxPercent());
+            ps.setInt(6, shop.getPeriodMinutes());
+            ps.setInt(7, shop.getPeriodMinutes());
+            ps.setString(8, shop.getShopMode().name());
+            ps.setString(9, shop.getId());
             ps.executeUpdate();
         }
     }
