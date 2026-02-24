@@ -175,6 +175,42 @@ public class ShopService {
         }
     }
 
+
+    public ItemStack buildGiveItem(ShopItem item, int amount) {
+        ItemStack give = item.getItem().clone();
+        give.setAmount(amount);
+        return give;
+    }
+
+    public ItemStack buildDisplayItem(Shop shop, ShopItem item) {
+        ItemStack display = item.getItem().clone();
+        var meta = display.getItemMeta();
+        if (meta != null) {
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            lore.add("§7이전 구매가: §f" + item.getPreviousBuyPrice());
+            lore.add("§7현재 구매가: §f" + currentBuy(shop, item));
+            lore.add("§7이전 판매가: §f" + item.getPreviousSellPrice());
+            lore.add("§7현재 판매가: §f" + currentSell(shop, item));
+            switch (shop.getShopMode()) {
+                case BUY_ONLY -> {
+                    lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
+                    lore.add("§c판매 불가 상점");
+                }
+                case SELL_ONLY -> {
+                    lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
+                    lore.add("§c구매 불가 상점");
+                }
+                default -> {
+                    lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
+                    lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
+                }
+            }
+            meta.setLore(lore);
+            display.setItemMeta(meta);
+        }
+        return display;
+    }
+
     public long currentBuy(Shop shop, ShopItem item) { return Math.max(1, item.getCurrentBuyPrice() <= 0 ? item.getBuyPrice() : item.getCurrentBuyPrice()); }
     public long currentSell(Shop shop, ShopItem item) { return Math.max(1, item.getCurrentSellPrice() <= 0 ? item.getSellPrice() : item.getCurrentSellPrice()); }
     public boolean isSameTradeItem(ShopItem item, ItemStack candidate) { return ItemUtil.isSameForSelling(plugin, item.getItem(), candidate, shopItemId(item.getSlot())); }

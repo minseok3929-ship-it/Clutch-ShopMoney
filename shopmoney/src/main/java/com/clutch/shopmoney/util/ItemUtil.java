@@ -83,7 +83,16 @@ public final class ItemUtil {
         if (ta == null && ca == null) return true;
         if (ta == null || ca == null) return false;
 
-        return Objects.equals(ta.getDisplayName(), ca.getDisplayName())
-                && Objects.equals(ta.getCustomModelData(), ca.getCustomModelData());
+        if (ta.hasCustomModelData()) {
+            if (!ca.hasCustomModelData()) return false;
+            if (ta.getCustomModelData() != ca.getCustomModelData()) return false;
+        }
+
+        if (ta.hasDisplayName()) {
+            if (!ca.hasDisplayName()) return false;
+            if (!Objects.equals(ta.getDisplayName(), ca.getDisplayName())) return false;
+        }
+
+        return true;
     }
 }

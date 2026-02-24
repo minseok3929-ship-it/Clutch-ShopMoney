@@ -187,7 +187,8 @@ public class InventoryListener implements Listener {
         long cost = shopService.currentBuy(shop, item) * amount;
         if (!moneyService.withdraw(player.getUniqueId(), cost)) { messageUtil.send(player, "§c돈이 부족합니다!!"); SoundUtil.error(player); return; }
         if (player.getInventory().firstEmpty() == -1) { moneyService.deposit(player.getUniqueId(), cost); messageUtil.send(player, "§c빈 공간이 없습니다!"); SoundUtil.error(player); return; }
-        ItemStack give = item.getItem().clone(); give.setAmount(amount); player.getInventory().addItem(give);
+        ItemStack give = shopService.buildGiveItem(item, amount);
+        player.getInventory().addItem(give);
         messageUtil.send(player, "§f구매 완료"); SoundUtil.success(player);
     }
 

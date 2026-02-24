@@ -2,7 +2,6 @@ package com.clutch.shopmoney.gui;
 
 import com.clutch.shopmoney.model.Shop;
 import com.clutch.shopmoney.model.ShopItem;
-import com.clutch.shopmoney.model.ShopMode;
 import com.clutch.shopmoney.service.ShopService;
 import com.clutch.shopmoney.util.ItemUtil;
 import org.bukkit.Bukkit;
@@ -34,27 +33,7 @@ public class GuiFactory {
             int idx = start + i;
             if (idx >= shop.getItems().size()) break;
             ShopItem si = shop.getItems().get(idx);
-            ItemStack display = si.getItem().clone();
-            ItemMeta meta = display.getItemMeta();
-            if (meta != null) {
-                List<String> lore = new ArrayList<>();
-                lore.add("§7이전 구매가: §f" + si.getPreviousBuyPrice());
-                lore.add("§7현재 구매가: §f" + shopService.currentBuy(shop, si));
-                lore.add("§7이전 판매가: §f" + si.getPreviousSellPrice());
-                lore.add("§7현재 판매가: §f" + shopService.currentSell(shop, si));
-                if (shop.getShopMode() == ShopMode.BUY_ONLY) {
-                    lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
-                    lore.add("§c판매 불가 상점");
-                } else if (shop.getShopMode() == ShopMode.SELL_ONLY) {
-                    lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
-                    lore.add("§c구매 불가 상점");
-                } else {
-                    lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
-                    lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
-                }
-                meta.setLore(lore);
-                display.setItemMeta(meta);
-            }
+            ItemStack display = shopService.buildDisplayItem(shop, si);
             inv.setItem(ShopService.INNER_SLOTS.get(i), display);
         }
         inv.setItem(45, nav("§a이전 페이지"));
@@ -103,15 +82,6 @@ public class GuiFactory {
             ShopItem existing = shop.getItems().stream().filter(it -> it.getSlot() == absolute).findFirst().orElse(null);
             if (existing != null) {
                 ItemStack display = existing.getItem().clone();
-                ItemMeta meta = display.getItemMeta();
-                if (meta != null) {
-                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add("§e우클릭: 가격 설정");
-                    lore.add("§eShift+클릭: 아이템 제거");
-                    lore.add("§7드래그: 슬롯 이동/배치");
-                    meta.setLore(lore);
-                    display.setItemMeta(meta);
-                }
                 inv.setItem(ShopService.INNER_SLOTS.get(i), display);
             }
         }
