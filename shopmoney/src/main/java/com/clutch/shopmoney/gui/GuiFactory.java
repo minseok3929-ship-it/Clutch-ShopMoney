@@ -2,6 +2,7 @@ package com.clutch.shopmoney.gui;
 
 import com.clutch.shopmoney.model.Shop;
 import com.clutch.shopmoney.model.ShopItem;
+import com.clutch.shopmoney.model.ShopMode;
 import com.clutch.shopmoney.service.ShopService;
 import com.clutch.shopmoney.util.ItemUtil;
 import org.bukkit.Bukkit;
@@ -41,8 +42,16 @@ public class GuiFactory {
                 lore.add("§7현재 구매가: §f" + shopService.currentBuy(shop, si));
                 lore.add("§7이전 판매가: §f" + si.getPreviousSellPrice());
                 lore.add("§7현재 판매가: §f" + shopService.currentSell(shop, si));
-                lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
-                lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
+                if (shop.getShopMode() == ShopMode.BUY_ONLY) {
+                    lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
+                    lore.add("§c판매 불가 상점");
+                } else if (shop.getShopMode() == ShopMode.SELL_ONLY) {
+                    lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
+                    lore.add("§c구매 불가 상점");
+                } else {
+                    lore.add("§e좌클릭=1개 구매, Shift+좌클릭=64개 구매");
+                    lore.add("§e우클릭=1개 판매, Shift+우클릭=전부 판매");
+                }
                 meta.setLore(lore);
                 display.setItemMeta(meta);
             }
@@ -108,10 +117,29 @@ public class GuiFactory {
         }
 
         inv.setItem(45, nav("§a이전 페이지"));
+        inv.setItem(48, modeItem(shop));
         inv.setItem(49, pageItem(normalized + 1, totalPages));
         inv.setItem(50, nav("§b변동률/주기 설정 (채팅)"));
         inv.setItem(53, nav("§a다음 페이지"));
         return inv;
+    }
+
+
+    private ItemStack modeItem(Shop shop) {
+        ItemStack item = new ItemStack(Material.COMPARATOR);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§f상점 모드: §e" + shop.getShopMode().name());
+            meta.setLore(List.of(
+                    "§7현재: " + shop.getShopMode().name(),
+                    "§7BUY_ONLY: 좌클릭 구매만",
+                    "§7SELL_ONLY: 우클릭 판매만",
+                    "§7BUY_SELL: 구매+판매",
+                    "§e클릭: 모드 순환 토글"
+            ));
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     private void fillBorder(Inventory inv) {

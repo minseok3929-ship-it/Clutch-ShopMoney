@@ -3,6 +3,7 @@ package com.clutch.shopmoney.listener;
 import com.clutch.shopmoney.gui.*;
 import com.clutch.shopmoney.model.Shop;
 import com.clutch.shopmoney.model.ShopItem;
+import com.clutch.shopmoney.model.ShopMode;
 import com.clutch.shopmoney.service.ChatInputService;
 import com.clutch.shopmoney.service.MoneyService;
 import com.clutch.shopmoney.service.ShopService;
@@ -124,10 +125,22 @@ public class InventoryListener implements Listener {
 
         try {
             switch (event.getClick()) {
-                case LEFT -> buy(player, shop, shopItem, 1);
-                case SHIFT_LEFT -> buy(player, shop, shopItem, 64);
-                case RIGHT -> sell(player, shop, shopItem, false);
-                case SHIFT_RIGHT -> sell(player, shop, shopItem, true);
+                case LEFT -> {
+                    if (shop.getShopMode() == ShopMode.SELL_ONLY) { messageUtil.send(player, "§c이 상점에서는 구매할 수 없습니다."); SoundUtil.error(player); return; }
+                    buy(player, shop, shopItem, 1);
+                }
+                case SHIFT_LEFT -> {
+                    if (shop.getShopMode() == ShopMode.SELL_ONLY) { messageUtil.send(player, "§c이 상점에서는 구매할 수 없습니다."); SoundUtil.error(player); return; }
+                    buy(player, shop, shopItem, 64);
+                }
+                case RIGHT -> {
+                    if (shop.getShopMode() == ShopMode.BUY_ONLY) { messageUtil.send(player, "§c이 상점에서는 판매할 수 없습니다."); SoundUtil.error(player); return; }
+                    sell(player, shop, shopItem, false);
+                }
+                case SHIFT_RIGHT -> {
+                    if (shop.getShopMode() == ShopMode.BUY_ONLY) { messageUtil.send(player, "§c이 상점에서는 판매할 수 없습니다."); SoundUtil.error(player); return; }
+                    sell(player, shop, shopItem, true);
+                }
                 default -> { return; }
             }
         } catch (SQLException e) {
@@ -147,6 +160,7 @@ public class InventoryListener implements Listener {
             int total = Math.max(1, (int) Math.ceil((shop.getItems().size() + 1) / (double) ShopService.INNER_SLOTS.size()));
             if (slot == 45) { event.setCancelled(true); player.openInventory(guiFactory.editShop(shop, Math.max(0, holder.page() - 1))); return; }
             if (slot == 53) { event.setCancelled(true); player.openInventory(guiFactory.editShop(shop, Math.min(total - 1, holder.page() + 1))); return; }
+            if (slot == 48) { event.setCancelled(true); shop.setShopMode(shop.getShopMode().next()); try { shopService.repository().updateShopMeta(shop); } catch (SQLException ignored) {} player.openInventory(guiFactory.editShop(shop, holder.page())); messageUtil.send(player, "§f상점 모드 변경: §e" + shop.getShopMode().name()); return; }
             if (slot == 50) { event.setCancelled(true); player.closeInventory(); chatInputService.startVolatilitySession(player, shop.getId(), holder.page()); return; }
             if (EDIT_LOCKED.contains(slot) || !ShopService.INNER_SLOTS.contains(slot)) { event.setCancelled(true); return; }
 
@@ -178,17 +192,17 @@ public class InventoryListener implements Listener {
     }
 
     private void sell(Player player, Shop shop, ShopItem target, boolean all) throws SQLException {
-        int sold = all ? countAndRemoveAll(player.getInventory(), target.getItem()) : removeOne(player.getInventory(), target.getItem());
+        int sold = all ? countAndRemoveAll(player.getInventory(), target) : removeOne(player.getInventory(), target);
         if (sold <= 0) { messageUtil.send(player, "§c물품이 부족합니다!!"); SoundUtil.error(player); return; }
         moneyService.deposit(player.getUniqueId(), shopService.currentSell(shop, target) * sold);
         messageUtil.send(player, "§f판매 완료: §e" + sold + "개");
         SoundUtil.success(player);
     }
 
-    private int removeOne(Inventory inv, ItemStack target) {
+    private int removeOne(Inventory inv, ShopItem target) {
         for (int i = 0; i < inv.getSize(); i++) {
             ItemStack item = inv.getItem(i);
-            if (item != null && shopService.isSameTradeItem(item, target)) {
+            if (item != null && shopService.isSameTradeItem(target, item)) {
                 item.setAmount(item.getAmount() - 1);
                 if (item.getAmount() <= 0) inv.setItem(i, null);
                 return 1;
@@ -197,11 +211,11 @@ public class InventoryListener implements Listener {
         return 0;
     }
 
-    private int countAndRemoveAll(Inventory inv, ItemStack target) {
+    private int countAndRemoveAll(Inventory inv, ShopItem target) {
         int total = 0;
         for (int i = 0; i < inv.getSize(); i++) {
             ItemStack item = inv.getItem(i);
-            if (item != null && shopService.isSameTradeItem(item, target)) {
+            if (item != null && shopService.isSameTradeItem(target, item)) {
                 total += item.getAmount();
                 inv.setItem(i, null);
             }

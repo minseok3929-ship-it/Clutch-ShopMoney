@@ -35,7 +35,16 @@ public class ShopService {
 
     public ShopService(JavaPlugin plugin, ShopRepository repository) {this.plugin = plugin; this.repository = repository;}
 
-    public void load() throws SQLException { shops.clear(); shops.putAll(repository.loadAll()); }
+    public void load() throws SQLException {
+        shops.clear();
+        shops.putAll(repository.loadAll());
+        for (Shop shop : shops.values()) {
+            for (ShopItem item : shop.getItems()) {
+                if (item.getItem() != null) ItemUtil.applyShopItemId(plugin, item.getItem(), shopItemId(item.getSlot()));
+                normalizeItemPrices(item);
+            }
+        }
+    }
     public Collection<Shop> all() { return shops.values(); }
     public Shop get(String id) { return shops.get(id); }
     public void create(String id) throws SQLException { repository.createShop(id, id); load(); }
@@ -160,7 +169,7 @@ public class ShopService {
 
     public long currentBuy(Shop shop, ShopItem item) { return Math.max(1, item.getCurrentBuyPrice() <= 0 ? item.getBuyPrice() : item.getCurrentBuyPrice()); }
     public long currentSell(Shop shop, ShopItem item) { return Math.max(1, item.getCurrentSellPrice() <= 0 ? item.getSellPrice() : item.getCurrentSellPrice()); }
-    public boolean isSameTradeItem(ItemStack a, ItemStack b) { return ItemUtil.isSameForSelling(a, b); }
+    public boolean isSameTradeItem(ShopItem item, ItemStack candidate) { return ItemUtil.isSameForSelling(plugin, item.getItem(), candidate, shopItemId(item.getSlot())); }
 
     public void normalizeItemPrices(ShopItem item) {
         item.setCurrentBuyPrice(applyGuard(item.getBuyPrice(), item.getCurrentBuyPrice() <= 0 ? item.getBuyPrice() : item.getCurrentBuyPrice()));
@@ -182,11 +191,15 @@ public class ShopService {
             }
             ShopItem existing = bySlot.get(absoluteSlot);
             if (existing == null) {
-                ShopItem created = new ShopItem(0, one(stack), 1, 1, 1, 1, 1, 1, absoluteSlot);
+                ItemStack base = one(stack);
+                ItemUtil.applyShopItemId(plugin, base, shopItemId(absoluteSlot));
+                ShopItem created = new ShopItem(0, base, 1, 1, 1, 1, 1, 1, absoluteSlot);
                 normalizeItemPrices(created);
                 bySlot.put(absoluteSlot, created);
             } else {
-                existing.setItem(one(stack));
+                ItemStack base = one(stack);
+                ItemUtil.applyShopItemId(plugin, base, shopItemId(absoluteSlot));
+                existing.setItem(base);
                 bySlot.put(absoluteSlot, existing);
             }
         }
@@ -200,7 +213,14 @@ public class ShopService {
 
     private ItemStack one(ItemStack in) { ItemStack c = in.clone(); c.setAmount(1); return c; }
 
-    public int totalPages(Shop shop) { return Math.max(1, (int) Math.ceil(shop.getItems().size() / (double) INNER_SLOTS.size())); }
+    public String shopItemId(int absoluteSlot) {
+        return "shop-item-" + absoluteSlot;
+    }
+
+    public int totalPages(Shop shop) {
+        int max = shop.getItems().stream().mapToInt(ShopItem::getSlot).max().orElse(-1);
+        return Math.max(1, (int) Math.ceil((max + 1) / (double) INNER_SLOTS.size()));
+    }
 
     public ShopRepository repository() { return repository; }
 }

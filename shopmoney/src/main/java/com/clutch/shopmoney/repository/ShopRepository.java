@@ -2,6 +2,7 @@ package com.clutch.shopmoney.repository;
 
 import com.clutch.shopmoney.model.Shop;
 import com.clutch.shopmoney.model.ShopItem;
+import com.clutch.shopmoney.model.ShopMode;
 import com.clutch.shopmoney.model.ShopSpawn;
 import com.clutch.shopmoney.util.SerializationUtil;
 
@@ -9,6 +10,9 @@ import java.sql.*;
 import java.util.*;
 
 public class ShopRepository {
+    private ShopMode parseMode(String raw) {
+        try { return ShopMode.valueOf(raw); } catch (Exception e) { return ShopMode.BUY_SELL; }
+    }
     private final Database database;
 
     public ShopRepository(Database database) {
@@ -16,13 +20,14 @@ public class ShopRepository {
     }
 
     public void createShop(String id, String name) throws SQLException {
-        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO shops(id,name,fluctuation_enabled,volatility_min,volatility_max,period_minutes) VALUES(?,?,?,?,?,?)")) {
+        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("INSERT INTO shops(id,name,fluctuation_enabled,volatility_min,volatility_max,period_minutes,shop_mode) VALUES(?,?,?,?,?,?,?)")) {
             ps.setString(1, id);
             ps.setString(2, name);
             ps.setInt(3, 1);
             ps.setInt(4, -50);
             ps.setInt(5, 80);
             ps.setInt(6, 10);
+            ps.setString(7, ShopMode.BUY_SELL.name());
             ps.executeUpdate();
         }
     }
@@ -39,7 +44,7 @@ public class ShopRepository {
         Map<String, Shop> map = new LinkedHashMap<>();
         try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("SELECT * FROM shops"); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                Shop s = new Shop(rs.getString("id"), rs.getString("name"), rs.getInt("fluctuation_enabled") == 1, rs.getInt("volatility_min"), rs.getInt("volatility_max"), rs.getInt("period_minutes"));
+                Shop s = new Shop(rs.getString("id"), rs.getString("name"), rs.getInt("fluctuation_enabled") == 1, rs.getInt("volatility_min"), rs.getInt("volatility_max"), rs.getInt("period_minutes"), parseMode(rs.getString("shop_mode")));
                 map.put(s.getId(), s);
             }
         }
@@ -112,13 +117,14 @@ public class ShopRepository {
     }
 
     public void updateShopMeta(Shop shop) throws SQLException {
-        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("UPDATE shops SET name=?, fluctuation_enabled=?, volatility_min=?, volatility_max=?, period_minutes=? WHERE id=?")) {
+        try (Connection conn = database.getConnection(); PreparedStatement ps = conn.prepareStatement("UPDATE shops SET name=?, fluctuation_enabled=?, volatility_min=?, volatility_max=?, period_minutes=?, shop_mode=? WHERE id=?")) {
             ps.setString(1, shop.getName());
             ps.setInt(2, shop.isFluctuationEnabled() ? 1 : 0);
             ps.setInt(3, shop.getVolatilityMinPercent());
             ps.setInt(4, shop.getVolatilityMaxPercent());
             ps.setInt(5, shop.getPeriodMinutes());
-            ps.setString(6, shop.getId());
+            ps.setString(6, shop.getShopMode().name());
+            ps.setString(7, shop.getId());
             ps.executeUpdate();
         }
     }
