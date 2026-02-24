@@ -38,6 +38,7 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
         ChatInputService chatInputService = new ChatInputService(this, shopService, guiFactory, messageUtil);
         try { shopService.load(); } catch (Exception ignored) {}
         shopService.restoreFromWorldScan();
+        shopService.startFluctuationTask();
 
         AdminCommand adminCommand = new AdminCommand(this, moneyService, shopService, guiFactory, messageUtil);
         registerCommand("출금", new WithdrawCommand(this, moneyService, messageUtil), null);

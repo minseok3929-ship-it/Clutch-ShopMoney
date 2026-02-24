@@ -13,6 +13,11 @@ shop:
     title: "§8상점 편집"
   spawnGui:
     title: "§8상점 소환권"
+  priceGuard:
+    enabled: true
+    minMultiplier: 0.5
+    maxMultiplier: 1.8
+    mode: "RESET_TO_BASE"
 
 scoreboard:
   title: "§8CLUTCH"

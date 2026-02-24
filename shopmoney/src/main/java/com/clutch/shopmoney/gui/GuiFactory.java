@@ -24,19 +24,12 @@ public class GuiFactory {
     }
 
     public Inventory playerShop(Shop shop, int page) {
-        Inventory inv = Bukkit.createInventory(new ShopGuiHolder(shop.getId(), page), 54, plugin.getConfig().getString("shop.gui.title", "§8상점") + " §7- " + shop.getName());
-        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta gm = glass.getItemMeta();
-        if (gm != null) { gm.setDisplayName(" "); glass.setItemMeta(gm); }
-        for (int i = 0; i < 54; i++) {
-            int row = i / 9;
-            int col = i % 9;
-            if (row == 0 || row == 5 || col == 0 || col == 8) inv.setItem(i, glass);
-        }
-        List<Integer> inside = new ArrayList<>();
-        for (int r=1;r<=4;r++) for(int c=1;c<=7;c++) inside.add(r*9+c);
-        int start = page * inside.size();
-        for (int i=0;i<inside.size();i++) {
+        int totalPages = shopService.totalPages(shop);
+        int normalized = Math.max(0, Math.min(page, totalPages - 1));
+        Inventory inv = Bukkit.createInventory(new ShopGuiHolder(shop.getId(), normalized), 54, plugin.getConfig().getString("shop.gui.title", "§8상점") + " §7- " + shop.getName());
+        fillBorder(inv);
+        int start = normalized * ShopService.INNER_SLOTS.size();
+        for (int i = 0; i < ShopService.INNER_SLOTS.size(); i++) {
             int idx = start + i;
             if (idx >= shop.getItems().size()) break;
             ShopItem si = shop.getItems().get(idx);
@@ -53,9 +46,10 @@ public class GuiFactory {
                 meta.setLore(lore);
                 display.setItemMeta(meta);
             }
-            inv.setItem(inside.get(i), display);
+            inv.setItem(ShopService.INNER_SLOTS.get(i), display);
         }
         inv.setItem(45, nav("§a이전 페이지"));
+        inv.setItem(49, pageItem(normalized + 1, totalPages));
         inv.setItem(53, nav("§a다음 페이지"));
         return inv;
     }
@@ -65,7 +59,7 @@ public class GuiFactory {
         int slot = 0;
         for (Shop s : shops) {
             if (slot >= 54) break;
-            inv.setItem(slot++, ItemUtil.createShopTicket(plugin, s.getId(), s.getName(), "변동률: " + s.getFluctuationPercent() + "% / 품목: " + s.getItems().size()));
+            inv.setItem(slot++, ItemUtil.createShopTicket(plugin, s.getId(), s.getName(), "변동률: " + s.getVolatilityMinPercent() + "~" + s.getVolatilityMaxPercent() + "% / 품목: " + s.getItems().size()));
         }
         return inv;
     }
@@ -86,17 +80,58 @@ public class GuiFactory {
         return inv;
     }
 
-    public Inventory editShop(Shop shop) {
-        return editShop(shop, 0);
-    }
+    public Inventory editShop(Shop shop) { return editShop(shop, 0); }
 
     public Inventory editShop(Shop shop, int page) {
-        Inventory inv = Bukkit.createInventory(new AdminEditShopGuiHolder(shop.getId(), page), 54, plugin.getConfig().getString("shop.editGui.title", "§8상점 편집") + " §7- " + shop.getName());
-        for (ShopItem item : shop.getItems()) {
-            if (item.getSlot() >= 0 && item.getSlot() < 54) inv.setItem(item.getSlot(), item.getItem());
+        int totalPages = Math.max(1, (int) Math.ceil((shop.getItems().size() + 1) / (double) ShopService.INNER_SLOTS.size()));
+        int normalized = Math.max(0, Math.min(page, totalPages - 1));
+        Inventory inv = Bukkit.createInventory(new AdminEditShopGuiHolder(shop.getId(), normalized), 54, plugin.getConfig().getString("shop.editGui.title", "§8상점 편집") + " §7- " + shop.getName());
+        fillBorder(inv);
+
+        int start = normalized * ShopService.INNER_SLOTS.size();
+        for (int i = 0; i < ShopService.INNER_SLOTS.size(); i++) {
+            int absolute = start + i;
+            ShopItem existing = shop.getItems().stream().filter(it -> it.getSlot() == absolute).findFirst().orElse(null);
+            if (existing != null) {
+                ItemStack display = existing.getItem().clone();
+                ItemMeta meta = display.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add("§e우클릭: 가격 설정");
+                    lore.add("§eShift+클릭: 아이템 제거");
+                    lore.add("§7드래그: 슬롯 이동/배치");
+                    meta.setLore(lore);
+                    display.setItemMeta(meta);
+                }
+                inv.setItem(ShopService.INNER_SLOTS.get(i), display);
+            }
         }
-        inv.setItem(49, nav("§b변동률/주기 설정 (채팅)"));
+
+        inv.setItem(45, nav("§a이전 페이지"));
+        inv.setItem(49, pageItem(normalized + 1, totalPages));
+        inv.setItem(50, nav("§b변동률/주기 설정 (채팅)"));
+        inv.setItem(53, nav("§a다음 페이지"));
         return inv;
+    }
+
+    private void fillBorder(Inventory inv) {
+        ItemStack glass = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        ItemMeta gm = glass.getItemMeta();
+        if (gm != null) { gm.setDisplayName(" "); glass.setItemMeta(gm); }
+        for (int i = 0; i < 54; i++) {
+            int row = i / 9; int col = i % 9;
+            if (row == 0 || row == 5 || col == 0 || col == 8) inv.setItem(i, glass);
+        }
+    }
+
+    private ItemStack pageItem(int current, int total) {
+        ItemStack item = new ItemStack(Material.PAPER);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§f페이지 §e" + current + "/" + total);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     private ItemStack nav(String name) {

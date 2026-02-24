@@ -36,20 +36,17 @@ public class ChatInputService {
 
     public void startVolatilitySession(Player player, String shopId, int page) {
         startSession(player, new ChatSession(SessionType.VOLATILITY_SET, shopId, null, page, null));
-        messageUtil.send(player, "§f변동률을 입력하세요. 범위: -50 ~ 80 (숫자만)");
+        messageUtil.send(player, "§f변동률 범위를 입력하세요. 예) -50~80, -50 ~ 80, -50 80");
     }
 
     private void startSession(Player player, ChatSession session) {
         ChatSession old = sessions.remove(player.getUniqueId());
-        if (old != null && old.timeoutTask() != null) {
-            old.timeoutTask().cancel();
-        }
+        if (old != null && old.timeoutTask() != null) old.timeoutTask().cancel();
         BukkitTask timeoutTask = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            ChatSession active = sessions.get(player.getUniqueId());
-            if (active == session || (active != null && active.sameKey(session))) {
-                sessions.remove(player.getUniqueId());
+            ChatSession active = sessions.remove(player.getUniqueId());
+            if (active != null) {
                 messageUtil.send(player, "§c취소되었습니다");
-                reopen(player, session.shopId(), session.page());
+                reopen(player, active.shopId(), active.page());
             }
         }, 20L * 30);
         sessions.put(player.getUniqueId(), session.withTimeout(timeoutTask));
@@ -57,12 +54,8 @@ public class ChatInputService {
 
     public boolean handleChat(Player player, String message) {
         ChatSession session = sessions.remove(player.getUniqueId());
-        if (session == null) {
-            return false;
-        }
-        if (session.timeoutTask() != null) {
-            session.timeoutTask().cancel();
-        }
+        if (session == null) return false;
+        if (session.timeoutTask() != null) session.timeoutTask().cancel();
         Bukkit.getScheduler().runTask(plugin, () -> process(player, session, message.trim()));
         return true;
     }
@@ -77,27 +70,21 @@ public class ChatInputService {
         switch (session.type()) {
             case PRICE_SET -> {
                 String[] split = input.split("\\s+");
-                if (split.length != 2) {
-                    cancelAndReturn(player, shop, session.page());
-                    return;
-                }
+                if (split.length != 2) { cancelAndReturn(player, shop, session.page()); return; }
                 Long buy = NumberUtil.parsePositiveLong(split[0]);
                 Long sell = NumberUtil.parsePositiveLong(split[1]);
-                if (buy == null || sell == null) {
-                    cancelAndReturn(player, shop, session.page());
-                    return;
-                }
-                ShopItem item = shop.getItems().stream().filter(it -> it.getSlot() == (session.targetItemId() == null ? -999 : session.targetItemId())).findFirst().orElse(null);
-                if (item == null) {
-                    cancelAndReturn(player, shop, session.page());
-                    return;
-                }
-                item.setPreviousBuyPrice(item.getBuyPrice());
-                item.setPreviousSellPrice(item.getSellPrice());
+                if (buy == null || sell == null) { cancelAndReturn(player, shop, session.page()); return; }
+                ShopItem item = shop.getItems().stream().filter(it -> it.getSlot() == (session.targetItemId() == null ? -1 : session.targetItemId())).findFirst().orElse(null);
+                if (item == null) { cancelAndReturn(player, shop, session.page()); return; }
                 item.setBuyPrice(buy);
                 item.setSellPrice(sell);
+                item.setPreviousBuyPrice(item.getCurrentBuyPrice());
+                item.setPreviousSellPrice(item.getCurrentSellPrice());
+                item.setCurrentBuyPrice(buy);
+                item.setCurrentSellPrice(sell);
+                shopService.normalizeItemPrices(item);
                 try {
-                    shopService.repository().updateShopItem(item);
+                    shopService.repository().replaceItems(shop.getId(), shop.getItems());
                     messageUtil.send(player, "§f설정 완료!");
                 } catch (SQLException e) {
                     messageUtil.send(player, "§c취소되었습니다");
@@ -105,27 +92,20 @@ public class ChatInputService {
                 reopen(player, shop.getId(), session.page());
             }
             case VOLATILITY_SET -> {
-                Integer volatility = parseInt(input);
-                if (volatility == null || volatility < -50 || volatility > 80) {
+                int[] range = parseRange(input);
+                if (range == null || range[0] < -50 || range[1] > 80 || range[0] > range[1]) {
                     cancelAndReturn(player, shop, session.page());
                     return;
                 }
-                shop.setFluctuationPercent(volatility);
-                try {
-                    shopService.repository().updateShopMeta(shop);
-                } catch (SQLException e) {
-                    cancelAndReturn(player, shop, session.page());
-                    return;
-                }
+                shop.setVolatilityMinPercent(range[0]);
+                shop.setVolatilityMaxPercent(range[1]);
+                try { shopService.repository().updateShopMeta(shop); } catch (SQLException e) { cancelAndReturn(player, shop, session.page()); return; }
                 startSession(player, new ChatSession(SessionType.PERIOD_SET, shop.getId(), null, session.page(), null));
                 messageUtil.send(player, "§f주기를 분 단위로 입력하세요. 예) 5 (숫자만)");
             }
             case PERIOD_SET -> {
                 Integer period = parseInt(input);
-                if (period == null || period < 1) {
-                    cancelAndReturn(player, shop, session.page());
-                    return;
-                }
+                if (period == null || period < 1) { cancelAndReturn(player, shop, session.page()); return; }
                 shop.setPeriodMinutes(period);
                 try {
                     shopService.repository().updateShopMeta(shop);
@@ -138,13 +118,30 @@ public class ChatInputService {
         }
     }
 
-    private Integer parseInt(String input) {
-        try {
-            return Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            return null;
+    private int[] parseRange(String input) {
+        String s = input.trim();
+        if (s.contains("~")) {
+            String[] p = s.split("~");
+            if (p.length != 2) return null;
+            Integer a = parseInt(p[0].trim());
+            Integer b = parseInt(p[1].trim());
+            return (a == null || b == null) ? null : new int[]{a,b};
         }
+        if (s.contains(",")) {
+            String[] p = s.split(",");
+            if (p.length != 2) return null;
+            Integer a = parseInt(p[0].trim());
+            Integer b = parseInt(p[1].trim());
+            return (a == null || b == null) ? null : new int[]{a,b};
+        }
+        String[] p = s.split("\\s+");
+        if (p.length != 2) return null;
+        Integer a = parseInt(p[0]);
+        Integer b = parseInt(p[1]);
+        return (a == null || b == null) ? null : new int[]{a,b};
     }
+
+    private Integer parseInt(String input) { try { return Integer.parseInt(input); } catch (NumberFormatException e) { return null; } }
 
     private void cancelAndReturn(Player player, Shop shop, int page) {
         messageUtil.send(player, "§c취소되었습니다");
@@ -157,19 +154,9 @@ public class ChatInputService {
         Bukkit.getScheduler().runTask(plugin, () -> player.openInventory(guiFactory.editShop(shop, page)));
     }
 
-    public enum SessionType {
-        PRICE_SET,
-        VOLATILITY_SET,
-        PERIOD_SET
-    }
+    public enum SessionType { PRICE_SET, VOLATILITY_SET, PERIOD_SET }
 
     private record ChatSession(SessionType type, String shopId, Integer targetItemId, int page, BukkitTask timeoutTask) {
-        private ChatSession withTimeout(BukkitTask timeoutTask) {
-            return new ChatSession(type, shopId, targetItemId, page, timeoutTask);
-        }
-
-        private boolean sameKey(ChatSession other) {
-            return type == other.type && shopId.equals(other.shopId) && page == other.page;
-        }
+        private ChatSession withTimeout(BukkitTask timeoutTask) { return new ChatSession(type, shopId, targetItemId, page, timeoutTask); }
     }
 }
