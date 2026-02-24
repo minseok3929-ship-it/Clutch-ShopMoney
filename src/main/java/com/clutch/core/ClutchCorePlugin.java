@@ -3,6 +3,7 @@ package com.clutch.core;
 import com.clutch.core.command.SpawnCommand;
 import com.clutch.core.command.WildCommand;
 import com.clutch.core.integration.ShopMoneyBridge;
+import com.clutch.core.listener.MoneyApiHookListener;
 import com.clutch.core.listener.PlayerCastCancelListener;
 import com.clutch.core.listener.PlayerJoinListener;
 import com.clutch.core.scoreboard.PlayerScoreboardService;
@@ -23,6 +24,7 @@ public class ClutchCorePlugin extends JavaPlugin {
         saveDefaultConfig();
 
         shopMoneyBridge = new ShopMoneyBridge(this);
+        shopMoneyBridge.resolveMoneyApi();
         scoreboardService = new PlayerScoreboardService(this, shopMoneyBridge);
         rtpService = new RTPService(this);
         teleportCastService = new TeleportCastService(this);
@@ -37,6 +39,9 @@ public class ClutchCorePlugin extends JavaPlugin {
         );
         getServer().getPluginManager().registerEvents(
                 new PlayerCastCancelListener(teleportCastService), this
+        );
+        getServer().getPluginManager().registerEvents(
+                new MoneyApiHookListener(shopMoneyBridge), this
         );
 
         scoreboardService.startUpdater();

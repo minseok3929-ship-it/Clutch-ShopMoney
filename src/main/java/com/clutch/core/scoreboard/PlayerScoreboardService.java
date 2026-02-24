@@ -4,6 +4,7 @@ import com.clutch.core.ClutchCorePlugin;
 import com.clutch.core.integration.ShopMoneyBridge;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -12,10 +13,12 @@ import org.bukkit.scoreboard.Team;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class PlayerScoreboardService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -52,10 +55,10 @@ public class PlayerScoreboardService {
         Objective objective = board.registerNewObjective("clutch", "dummy", "§8CLUTCH");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
-        createLine(board, objective, "line1", ChatColor.GRAY + "닉네임: " + ChatColor.YELLOW, 8);
-        createLine(board, objective, "line2", ChatColor.GRAY + "내 보유금: " + ChatColor.YELLOW, 7);
-        createLine(board, objective, "line3", ChatColor.GRAY + "현실 시간: " + ChatColor.YELLOW, 6);
-        createLine(board, objective, "line4", ChatColor.GRAY + "바이옴: " + ChatColor.YELLOW, 5);
+        createLine(board, objective, "line1", "§f닉네임: §e", 8);
+        createLine(board, objective, "line2", "§f내 보유금: §e", 7);
+        createLine(board, objective, "line3", "§f시간: §e", 6);
+        createLine(board, objective, "line4", "§f바이옴: §e", 5);
 
         player.setScoreboard(board);
         playerBoards.put(player.getUniqueId(), board);
@@ -81,13 +84,17 @@ public class PlayerScoreboardService {
             return;
         }
 
-        setPrefix(board, "line1", trim("§e" + player.getName()));
+        setSuffix(board, "line1", trim(player.getName()));
+        setSuffix(board, "line2", trim(shopMoneyBridge.getBalanceDisplay(player.getUniqueId())));
+        setSuffix(board, "line3", trim(LocalTime.now().format(TIME_FORMATTER)));
+        setSuffix(board, "line4", trim(formatBiome(player.getLocation().getBlock().getBiome())));
+    }
 
-        Optional<String> balanceOpt = shopMoneyBridge.getBalanceDisplay(player.getUniqueId());
-        setPrefix(board, "line2", trim("§e" + balanceOpt.orElse("N/A")));
-
-        setPrefix(board, "line3", trim("§e" + LocalTime.now().format(TIME_FORMATTER)));
-        setPrefix(board, "line4", trim("§e" + BiomeKoreanMapper.toKorean(player.getLocation().getBlock().getBiome())));
+    private String formatBiome(Biome biome) {
+        String biomeName = biome.name().toLowerCase(Locale.ROOT);
+        return Arrays.stream(biomeName.split("_"))
+                .map(part -> part.substring(0, 1).toUpperCase(Locale.ROOT) + part.substring(1))
+                .collect(Collectors.joining(" "));
     }
 
     private void createLine(Scoreboard board, Objective objective, String teamName, String label, int score) {
@@ -98,7 +105,7 @@ public class PlayerScoreboardService {
         objective.getScore(entry).setScore(score);
     }
 
-    private void setPrefix(Scoreboard board, String teamName, String value) {
+    private void setSuffix(Scoreboard board, String teamName, String value) {
         Team team = board.getTeam(teamName);
         if (team != null) {
             String normalized = value.length() > 64 ? value.substring(0, 64) : value;

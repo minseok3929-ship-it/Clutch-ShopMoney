@@ -1,76 +1,49 @@
 package com.clutch.core.integration;
 
-import org.bukkit.plugin.Plugin;
+import com.clutch.shopmoney.api.MoneyAPI;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Optional;
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.UUID;
 
 public class ShopMoneyBridge {
     private final JavaPlugin plugin;
-    private Plugin shopMoneyPlugin;
-    private Method directBalanceMethod;
+    private final NumberFormat numberFormat = NumberFormat.getInstance(Locale.US);
+    private MoneyAPI moneyAPI;
+    private boolean missingLogged;
 
     public ShopMoneyBridge(JavaPlugin plugin) {
         this.plugin = plugin;
-        hook();
     }
 
-    private void hook() {
-        shopMoneyPlugin = plugin.getServer().getPluginManager().getPlugin("Clutch-ShopMoney");
-        if (shopMoneyPlugin == null) {
-            shopMoneyPlugin = plugin.getServer().getPluginManager().getPlugin("ShopMoney");
-        }
-
-        if (shopMoneyPlugin == null) {
+    public void resolveMoneyApi() {
+        RegisteredServiceProvider<MoneyAPI> registration = Bukkit.getServicesManager().getRegistration(MoneyAPI.class);
+        if (registration == null) {
+            moneyAPI = null;
+            if (!missingLogged) {
+                plugin.getLogger().warning("[Clutch] MoneyAPI not found. ShopMoney plugin missing or not registered.");
+                missingLogged = true;
+            }
             return;
         }
 
-        try {
-            directBalanceMethod = shopMoneyPlugin.getClass().getMethod("getBalance", UUID.class);
-        } catch (NoSuchMethodException ignored) {
-            directBalanceMethod = null;
-        }
+        moneyAPI = registration.getProvider();
+        missingLogged = false;
     }
 
-    public Optional<String> getBalanceDisplay(UUID uuid) {
-        if (shopMoneyPlugin == null || !shopMoneyPlugin.isEnabled()) {
-            return Optional.empty();
+    public String getBalanceDisplay(UUID uuid) {
+        MoneyAPI api = this.moneyAPI;
+        if (api == null) {
+            return "N/A";
         }
 
-        if (directBalanceMethod != null) {
-            try {
-                Object result = directBalanceMethod.invoke(shopMoneyPlugin, uuid);
-                if (result instanceof Number number) {
-                    return Optional.of(String.format("%,.2f", number.doubleValue()));
-                }
-                if (result != null) {
-                    return Optional.of(result.toString());
-                }
-            } catch (IllegalAccessException | InvocationTargetException ignored) {
-                return Optional.empty();
-            }
+        long balance = api.getBalance(uuid);
+        if (balance < 0L) {
+            return "N/A";
         }
-
-        try {
-            Method getter = shopMoneyPlugin.getClass().getMethod("getApi");
-            Object api = getter.invoke(shopMoneyPlugin);
-            if (api != null) {
-                Method apiBalance = api.getClass().getMethod("getBalance", UUID.class);
-                Object result = apiBalance.invoke(api, uuid);
-                if (result instanceof Number number) {
-                    return Optional.of(String.format("%,.2f", number.doubleValue()));
-                }
-                if (result != null) {
-                    return Optional.of(result.toString());
-                }
-            }
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ignored) {
-            return Optional.empty();
-        }
-
-        return Optional.empty();
+        return numberFormat.format(balance);
     }
 }
