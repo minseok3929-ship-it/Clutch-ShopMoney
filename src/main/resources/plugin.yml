@@ -1,0 +1,31 @@
+name: clutch-core
+version: 1.0.0
+main: com.clutch.core.ClutchCorePlugin
+api-version: '1.21'
+softdepend: [ClutchShopMoney, Multiverse-Core]
+commands:
+  야생:
+    description: 야생 월드로 랜덤 텔레포트합니다.
+    usage: /야생
+    permission: clutch.move.wild
+  wild:
+    description: Teleport to the configured wild world with random location.
+    usage: /wild
+    permission: clutch.move.wild
+  스폰:
+    description: 3초 캐스팅 후 스폰으로 이동합니다.
+    usage: /스폰
+    permission: clutch.move.spawn
+  spawn:
+    description: Cast teleport to spawn.
+    usage: /spawn
+    permission: clutch.move.spawn
+permissions:
+  clutch.move.wild:
+    default: true
+  clutch.move.spawn:
+    default: true
+  clutch.scoreboard:
+    default: true
+  clutch.admin:
+    default: op

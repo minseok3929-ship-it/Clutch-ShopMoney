@@ -1,0 +1,14 @@
+prefix: "§8[CLUTCH] "
+
+worlds:
+  spawn: "home"
+  wild: "Wild"
+
+scoreboard:
+  update-ticks: 20
+
+rtp:
+  minRadius: 500
+  maxRadius: 8000
+  maxAttempts: 30
+  cooldownSeconds: 180
