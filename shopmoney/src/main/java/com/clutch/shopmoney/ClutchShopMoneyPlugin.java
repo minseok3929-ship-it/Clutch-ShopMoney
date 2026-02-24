@@ -26,6 +26,7 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
             database.init();
         } catch (Exception e) {
             getLogger().severe("DB init failed: " + e.getMessage());
+            e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -36,7 +37,12 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
         ShopService shopService = new ShopService(this, shopRepository);
         GuiFactory guiFactory = new GuiFactory(this, shopService);
         ChatInputService chatInputService = new ChatInputService(this, shopService, guiFactory, messageUtil);
-        try { shopService.load(); } catch (Exception ignored) {}
+        try {
+            shopService.load();
+        } catch (Exception e) {
+            getLogger().severe("[Clutch] Failed to load shops on enable");
+            e.printStackTrace();
+        }
         shopService.restoreFromWorldScan();
         shopService.startFluctuationTask();
 
@@ -54,7 +60,10 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
 
     private void registerCommand(String name, org.bukkit.command.CommandExecutor executor, org.bukkit.command.TabCompleter tabCompleter) {
         PluginCommand cmd = getCommand(name);
-        if (cmd == null) return;
+        if (cmd == null) {
+            getLogger().severe("[Clutch] Command not found in plugin.yml: " + name);
+            return;
+        }
         cmd.setExecutor(executor);
         if (tabCompleter != null) cmd.setTabCompleter(tabCompleter);
     }

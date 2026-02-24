@@ -47,7 +47,15 @@ public class ShopService {
     }
     public Collection<Shop> all() { return shops.values(); }
     public Shop get(String id) { return shops.get(id); }
-    public void create(String id) throws SQLException { repository.createShop(id, id); load(); }
+
+    public boolean existsShopName(String name) {
+        return shops.values().stream().anyMatch(s -> s.getName().equalsIgnoreCase(name));
+    }
+
+    public void create(String id) throws SQLException {
+        repository.createShop(id, id);
+        load();
+    }
 
     public void startFluctuationTask() {
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickFluctuation, 20L * 60, 20L * 60);
