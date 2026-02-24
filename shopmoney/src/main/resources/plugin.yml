@@ -1,0 +1,26 @@
+name: ClutchShopMoney
+main: com.clutch.shopmoney.ClutchShopMoneyPlugin
+version: ${version}
+api-version: '1.21'
+authors: [ Clutch ]
+commands:
+  출금:
+    description: 계좌에서 현금 아이템 출금
+    usage: /출금 <금액>
+    permission: clutch.money.use
+  돈:
+    description: "보유금 확인 및 송금"
+    usage: "/돈 또는 /돈 보내기 <닉네임> <금액>"
+    permission: clutch.money.use
+  t:
+    description: "CLUTCH 관리자 명령어"
+    usage: "/t <서브명령어>"
+permissions:
+  clutch.money.use:
+    default: true
+  clutch.money.admin:
+    default: op
+  clutch.shop.use:
+    default: true
+  clutch.shop.admin:
+    default: op

@@ -1,0 +1,23 @@
+message:
+  prefix: "§8[CLUTCH] "
+cash:
+  customModelData: 10001
+joinMessage:
+  enabled: true
+  cooldownSeconds: 0
+  text: "§f[Clutch plugin] 활성화"
+shop:
+  gui:
+    title: "§8상점"
+  editGui:
+    title: "§8상점 편집"
+  spawnGui:
+    title: "§8상점 소환권"
+  priceGuard:
+    enabled: true
+    minMultiplier: 0.5
+    maxMultiplier: 1.8
+    mode: "RESET_TO_BASE"
+
+scoreboard:
+  title: "§8CLUTCH"
