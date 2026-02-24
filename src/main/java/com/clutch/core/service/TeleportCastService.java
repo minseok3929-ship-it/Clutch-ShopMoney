@@ -23,7 +23,7 @@ public class TeleportCastService {
             return false;
         }
 
-        String worldName = plugin.getConfig().getString("worlds.home", "home");
+        String worldName = plugin.getConfig().getString("worlds.spawn", "home");
         World homeWorld = Bukkit.getWorld(worldName);
         if (homeWorld == null) {
             player.sendMessage(plugin.getPrefix() + "§c스폰 월드를 찾을 수 없습니다.");

@@ -21,7 +21,7 @@ public class RTPService {
     }
 
     public boolean isOnCooldown(Player player) {
-        long cooldownMillis = plugin.getConfig().getLong("wild.cooldown-seconds", 180L) * 1000L;
+        long cooldownMillis = plugin.getConfig().getLong("rtp.cooldownSeconds", 180L) * 1000L;
         long expiresAt = cooldownMap.getOrDefault(player.getUniqueId(), 0L);
         return System.currentTimeMillis() < expiresAt && cooldownMillis > 0;
     }
@@ -31,15 +31,15 @@ public class RTPService {
     }
 
     public Location findSafeLocation() {
-        String worldName = plugin.getConfig().getString("worlds.wild", "wild");
+        String worldName = plugin.getConfig().getString("worlds.wild", "Wild");
         World world = plugin.getServer().getWorld(worldName);
         if (world == null) {
             return null;
         }
 
-        int minRadius = plugin.getConfig().getInt("wild.rtp.min-radius", 500);
-        int maxRadius = plugin.getConfig().getInt("wild.rtp.max-radius", 5000);
-        int tries = plugin.getConfig().getInt("wild.rtp.max-attempts", 30);
+        int minRadius = plugin.getConfig().getInt("rtp.minRadius", 500);
+        int maxRadius = plugin.getConfig().getInt("rtp.maxRadius", 8000);
+        int tries = plugin.getConfig().getInt("rtp.maxAttempts", 30);
 
         for (int i = 0; i < tries; i++) {
             int[] coords = randomCoords(minRadius, maxRadius);
@@ -59,7 +59,7 @@ public class RTPService {
     }
 
     public void applyCooldown(Player player) {
-        long cooldownMillis = plugin.getConfig().getLong("wild.cooldown-seconds", 180L) * 1000L;
+        long cooldownMillis = plugin.getConfig().getLong("rtp.cooldownSeconds", 180L) * 1000L;
         cooldownMap.put(player.getUniqueId(), System.currentTimeMillis() + cooldownMillis);
     }
 
