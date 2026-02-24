@@ -1,0 +1,15 @@
+prefix: "§8[CLUTCH] "
+
+worlds:
+  home: "home"
+  wild: "wild"
+
+scoreboard:
+  update-ticks: 20
+
+wild:
+  cooldown-seconds: 180
+  rtp:
+    min-radius: 500
+    max-radius: 5000
+    max-attempts: 30
