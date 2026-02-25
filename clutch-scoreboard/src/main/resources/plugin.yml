@@ -1,0 +1,14 @@
+name: ClutchScoreboard
+main: com.clutch.scoreboard.ClutchScoreboardPlugin
+version: ${version}
+api-version: '1.21'
+authors: [ Clutch ]
+softdepend: [ ClutchShopMoney ]
+commands:
+  clutchsb:
+    description: 클러치 스코어보드 on/off
+    usage: /clutchsb <on|off>
+    permission: clutch.scoreboard
+permissions:
+  clutch.scoreboard:
+    default: true

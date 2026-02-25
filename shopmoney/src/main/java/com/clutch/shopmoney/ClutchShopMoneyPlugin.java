@@ -1,5 +1,6 @@
 package com.clutch.shopmoney;
 
+import com.clutch.shopmoney.api.MoneyAPI;
 import com.clutch.shopmoney.command.*;
 import com.clutch.shopmoney.gui.GuiFactory;
 import com.clutch.shopmoney.listener.*;
@@ -9,9 +10,11 @@ import com.clutch.shopmoney.repository.ShopRepository;
 import com.clutch.shopmoney.service.ChatInputService;
 import com.clutch.shopmoney.service.MoneyService;
 import com.clutch.shopmoney.service.ShopService;
+import com.clutch.shopmoney.service.api.MoneyApiProvider;
 import com.clutch.shopmoney.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ClutchShopMoneyPlugin extends JavaPlugin {
@@ -46,6 +49,9 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
         shopService.restoreFromWorldScan();
         shopService.startFluctuationTask();
 
+        MoneyAPI moneyApi = new MoneyApiProvider(moneyService);
+        Bukkit.getServicesManager().register(MoneyAPI.class, moneyApi, this, ServicePriority.Normal);
+
         AdminCommand adminCommand = new AdminCommand(this, moneyService, shopService, guiFactory, messageUtil);
         registerCommand("출금", new WithdrawCommand(this, moneyService, messageUtil), null);
         registerCommand("돈", new MoneyCommand(moneyService, messageUtil), new MoneyTabCompleter());
@@ -56,6 +62,11 @@ public class ClutchShopMoneyPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ShopEntityListener(shopService, guiFactory, messageUtil), this);
         Bukkit.getPluginManager().registerEvents(new InventoryListener(moneyService, shopService, guiFactory, messageUtil, chatInputService), this);
         Bukkit.getPluginManager().registerEvents(new ChatListener(chatInputService), this);
+    }
+
+    @Override
+    public void onDisable() {
+        Bukkit.getServicesManager().unregisterAll(this);
     }
 
     private void registerCommand(String name, org.bukkit.command.CommandExecutor executor, org.bukkit.command.TabCompleter tabCompleter) {

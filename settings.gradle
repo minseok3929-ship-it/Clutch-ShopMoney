@@ -1,2 +1,4 @@
 rootProject.name = 'Clutch-ShopMoney'
 include 'shopmoney'
+
+include 'clutch-scoreboard'
